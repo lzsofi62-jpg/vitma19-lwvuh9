@@ -16,7 +16,6 @@ def load_all_annotations():
                 print(f"ERROR: Failed to parse {json_file.name}: {e}")
                 continue
 
-        # Ha dict, tegyük listává
         if isinstance(data, dict):
             data = [data]
         elif not isinstance(data, list):
@@ -46,7 +45,6 @@ def load_all_annotations():
                     print(f"WARNING: No 'choices' or 'rating' in item id {item.get('id')}")
                     continue
 
-                # szöveg a JSON-ból
                 text_content = item.get("data", {}).get("text", "").strip()
                 if not text_content:
                     print(f"WARNING: Empty text in {json_file.name}, item id {item.get('id')}")

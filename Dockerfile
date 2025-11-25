@@ -1,5 +1,5 @@
-# 1. Base Image (Python slim)
-FROM python:3.10-slim
+# 1. Base Image
+FROM python:3.11-slim
 
 # 2. Munkakönyvtár beállítása
 WORKDIR /app
@@ -16,11 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. Alkalmazás kódjának és futtató scriptnek a másolása
+# 5. Alkalmazás kódjának másolása
 COPY ./src .
 
 # 6. Script futtathatóvá tétele
 RUN chmod +x run.sh
 
-# 7. Konténer indításkor a script fut
+# 7. Konténer indításkor a pipeline fut
 CMD ["bash", "run.sh"]
