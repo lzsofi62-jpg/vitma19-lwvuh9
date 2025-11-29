@@ -13,19 +13,13 @@ import numpy as np
 import re
 
 
-# ============================
-# CONFIG
-# ============================
 MODEL_NAME = "distilbert-base-multilingual-cased"
-MAX_LEN = 192                # kisebb -> gyorsabb CPU-ból
-BATCH_SIZE = 4               # kisebb batch -> kevesebb RAM
-EPOCHS = 5                   # később tuningolható
+MAX_LEN = 192               
+BATCH_SIZE = 4               
+EPOCHS = 5                  
 LR = 2e-5
 
 
-# ============================
-# FEATURE EXTRACTOR
-# ============================
 def extract_features(text: str):
     tokens = text.split()
 
@@ -37,7 +31,6 @@ def extract_features(text: str):
     num_par_refs = text.count("§") + text.lower().count("bek")
     num_upper = sum(1 for t in tokens if t.isupper())
 
-    # visszaad egy 5 dimenziós vektort
     return np.array([
         length,
         avg_token_len,
@@ -46,10 +39,6 @@ def extract_features(text: str):
         num_par_refs
     ], dtype=np.float32)
 
-
-# ============================
-# DATASET
-# ============================
 class ASZFDataset(Dataset):
     def __init__(self, texts, labels, tokenizer, max_len):
         self.texts = texts
@@ -74,7 +63,6 @@ class ASZFDataset(Dataset):
 
         item = {k: v.squeeze(0) for k, v in enc.items()}
 
-        # saját extra feature-ök
         item["extra_features"] = torch.tensor(
             extract_features(text),
             dtype=torch.float
@@ -84,9 +72,6 @@ class ASZFDataset(Dataset):
         return item
 
 
-# ============================
-# MODELL (BERT + extra features)
-# ============================
 class BertWithFeatures(nn.Module):
     def __init__(self, num_labels=5, feature_dim=5):
         super().__init__()
@@ -117,9 +102,6 @@ class BertWithFeatures(nn.Module):
         return logits
 
 
-# ============================
-# TRAIN LOOP
-# ============================
 def train_one_epoch(model, loader, optimizer, device):
     model.train()
     total_loss = 0
@@ -147,9 +129,6 @@ def train_one_epoch(model, loader, optimizer, device):
     return total_loss / len(loader)
 
 
-# ============================
-# MAIN
-# ============================
 def main():
     print("Loading data...")
     df = pd.read_csv("output/dataset.csv")
