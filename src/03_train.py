@@ -4,8 +4,8 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 from transformers import (
-    DistilBertTokenizerFast,
-    DistilBertModel,
+    AutoTokenizer,
+    AutoModel,
     AdamW
 )
 
@@ -13,10 +13,10 @@ import numpy as np
 import re
 
 
-MODEL_NAME = "distilbert-base-multilingual-cased"
-MAX_LEN = 192               
+MODEL_NAME = "SZTAKI-HuBERT/base"   # 🇭🇺 MAGYAR BERT
+MAX_LEN = 192                
 BATCH_SIZE = 4               
-EPOCHS = 5                  
+EPOCHS = 5                   
 LR = 2e-5
 
 
@@ -39,6 +39,7 @@ def extract_features(text: str):
         num_par_refs
     ], dtype=np.float32)
 
+
 class ASZFDataset(Dataset):
     def __init__(self, texts, labels, tokenizer, max_len):
         self.texts = texts
@@ -52,7 +53,6 @@ class ASZFDataset(Dataset):
     def __getitem__(self, idx):
         text = self.texts[idx]
 
-        # BERT tokenizálás
         enc = self.tokenizer(
             text,
             truncation=True,
@@ -76,7 +76,8 @@ class BertWithFeatures(nn.Module):
     def __init__(self, num_labels=5, feature_dim=5):
         super().__init__()
 
-        self.bert = DistilBertModel.from_pretrained(MODEL_NAME)
+        # 🇭🇺 HuBERT Base model
+        self.bert = AutoModel.from_pretrained(MODEL_NAME)
 
         bert_hidden = 768
 
@@ -89,7 +90,7 @@ class BertWithFeatures(nn.Module):
 
     def forward(self, input_ids, attention_mask, extra_features, labels=None):
         bert_out = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        cls = bert_out.last_hidden_state[:, 0]  # [CLS]
+        cls = bert_out.last_hidden_state[:, 0]  # CLS token
 
         x = torch.cat([cls, extra_features], dim=1)
         logits = self.classifier(x)
@@ -133,13 +134,12 @@ def main():
     print("Loading data...")
     df = pd.read_csv("output/dataset.csv")
 
-    # label 1–5 → 0–4 formátum
     df["label"] = df["label"].astype(str).str.extract(r"(\d)").astype(int) - 1
 
     texts = df["text"].tolist()
     labels = df["label"].tolist()
 
-    tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
     dataset = ASZFDataset(texts, labels, tokenizer, MAX_LEN)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
@@ -148,7 +148,6 @@ def main():
     print("Using CPU.")
 
     model = BertWithFeatures(num_labels=5).to(device)
-
     optimizer = AdamW(model.parameters(), lr=LR)
 
     print("Training...")
